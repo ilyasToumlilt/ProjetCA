@@ -1,0 +1,11 @@
+
+
+
+== Reponses ==
+
+   TP1-2 :
+   - Exo_1 :
+   -> Le programme test_karine.cpp prend en argument un fichier assembleur
+      le parse pour une eventuelle séparation des fonctions qui seront
+      ensuite affichées séparément par des tours de boucle.
+      
