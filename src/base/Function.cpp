@@ -302,7 +302,7 @@ list<Basic_block*>::iterator Function::bb_list_end(){
 void Function::comput_succ_pred_BB(){
   
    list<Basic_block*>::iterator it, it2;
-   Basic_block *current, *current2;
+   Basic_block *current;
    Instruction *instr;
    Basic_block *succ=NULL;
    // IMPORTANT ne pas enlever la ligne ci-dessous 
@@ -325,14 +325,20 @@ void Function::comput_succ_pred_BB(){
      
      /* Si la derniere instruction du bloc est un branchement */
      if(current->get_branch()){
-       if(getInst(current->get_branch())->is_indirect_branch()){
+       instr = getInst(current->get_branch());
+       
+       if(instr->is_indirect_branch()){
 	 /* pas de successeur pour les sauts indirects */
 	 it++;
 	 continue;
        }
-       else if(getInst(current->get_branch())->is_cond_branch()){
+       else if(instr->is_call()){
+	 if(i < (size-1))
+	   succ = get_BB(i+1);
+       }
+       else if(instr->is_cond_branch()){
 	 /* branchement conditionnel : 2 successeurs */
-	 succ = find_label_BB(getInst(current->get_branch())->get_op_label());
+	 succ = find_label_BB(instr->get_op_label());
 	 /* ajout du successeur pointee par 
 	    le Label indiquee au branchement */
 	 current->set_link_succ_pred(succ);
@@ -341,25 +347,13 @@ void Function::comput_succ_pred_BB(){
        else{
 	 /* 1 seul successeur, recuperer le 
 	    bloc de base du Label du saut */
-	 succ = find_label_BB(getInst(current->get_branch())->get_op_label());
+	 succ = find_label_BB(instr->get_op_label());
        }
      }
      else{
        /* pas de saut 1 successeur */
-       /* idee parcourir la liste des blocs de bases pour recuperer
-	  le bloc de base correspondant au Label */
-       it2=_myBB.begin();
-       
-       for (int i=0; i<size; i++){
-	 current2=*it2;
-
-	 if(current2->get_head() == current->get_end()->get_next()){
-	   succ = current2;
-	   break;
-	 }
-	 
-	 it2++;
-       }
+       if(i < (size-1))
+	 succ = get_BB(i+1);
      }
      
      /* ajout du successeur du bloc de base courant */
@@ -377,21 +371,50 @@ void Function::comput_succ_pred_BB(){
 
 void Function::compute_dom(){
  list<Basic_block*>::iterator it, it2;
-  list<Basic_block*> workinglist;
-  Basic_block *current, *bb, *pred;
-  Instruction *instr;
-  bool change = true;
-  
-  // NE pas enlever les 2 ligne ci-dessous
-  if (dom_computed) return;
-  comput_succ_pred_BB();
+ list<Basic_block*> workinglist;
+ Basic_block *current, *bb, *pred;
+ Instruction *instr;
+ bool change = true;
  
+ // NE pas enlever les 2 ligne ci-dessous
+ if (dom_computed) return;
+ comput_succ_pred_BB();
+   
+ // A COMPLETER
+ int size=(int)_myBB.size();
+ it=_myBB.begin();
+ 
+ if(size>0){
+   current=*it;
+   for(int j=1; j<NB_MAX_BB; j++){
+     current->Domin[j] = false;
+   }
+   it++;
 
-  // A COMPLETER 
+   for (int i=1; i<size; i++){
+     current=*it;
+     
+     /* recuperer la liste d'un predecesseur */
+     for(int j=0; j<NB_MAX_BB; j++){
+       current->Domin[j] = get_BB(current->get_index()-1)->Domin[j];
+     }
 
-  // ne pas enlever 
-  dom_computed = true;
-  return;
+     /* mettre current dans sa liste de blocs dominants */
+     current->Domin[i] = true;
+
+     /* ajouter le predecesseur a la liste s'il est unique */
+     if(current->get_nb_pred() == 1)
+       current->Domin[current->get_index()-1] = true;
+     else
+       current->Domin[current->get_index()-1] = false;
+     
+     it++;
+   }
+ }
+ 
+ // ne pas enlever 
+ dom_computed = true;
+ return;
 }
 
 void Function::compute_live_var(){
@@ -411,8 +434,8 @@ void Function::compute_live_var(){
 
 void Function::test(){
   int size=(int)_myBB.size();
-   for(int i=0;i<size; i++){
+  for(int i=0;i<size; i++){
     get_BB(i)->test();
   }
-   return;
+  return;
 }
