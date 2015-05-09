@@ -376,7 +376,91 @@ void Function::compute_dom(){
   comput_succ_pred_BB();
  
 
-  // A COMPLETER 
+  // A COMPLETER
+
+  /**** BEGIN: TP1-2 Exo5 ****/
+  int nbPred, i, j;
+
+  /* la liste des blocks ne doit pas être vide ... */
+  if( (int)_myBB.size() ){
+    /* Je commence par rajouter le premier block à la working list */
+    workinglist.push_back(get_BB(0));
+    /* parcours de la working list */
+    while( workinglist.size() ){
+      it = workinglist.begin();
+      current = *it;
+      
+      nbPred = current->get_nb_pred();
+
+      /* si le block n'a pas de prédécesseur c'est que son seul dominant
+	 est lui-même */
+      if( nbPred == 0 ){
+	for(i=0; i<(int)_myBB.size(); i++)
+	  current->Domin[i] = ( i == current->get_index() ) ? true : false;
+      }
+      /* sinon s'il a un seul prédécesseur, il prend tous ses dominant
+	 union lui-même */
+      else if( nbPred == 1 ){
+	pred = current->get_predecessor(0);
+	for(i=0; i<(int)_myBB.size(); i++){
+	  if( i == current->get_index()
+	      && current->Domin[i] == false ){
+	    current->Domin[i] = true;
+	    change = true;
+	  }
+	  else if( i != current->get_index()
+		   && current->Domin[i] != pred->Domin[i] ){
+	    current->Domin[i] = pred->Domin[i];
+	    change = true;
+	  }
+	}
+      }
+      /* sinon s'il y a plus d'un prédécesseur on fait l'intersection des
+	 dominants des prédécesseurs + moi même */
+      else {
+	for(i=0; i<(int)_myBB.size(); i++){
+	  if( i == current->get_index() ) {
+	    if( current->Domin[i] == false ){
+	      current->Domin[i] = true;
+	      change = true;
+	    }
+	  }
+	  else {
+	    for(j=0; j<nbPred; j++)
+	      if( current->get_predecessor(j)->Domin[i] == false )
+		break;
+	    if( j != nbPred
+		&& current->Domin[i] == true ){
+	      current->Domin[i] = false;
+	      change = true;
+	    }
+	    else if ( j == nbPred
+		      && current->Domin[i] == false ){
+	      current->Domin[i] = true;
+	      change = true;
+	    }
+	  }
+	}
+      }
+
+      /* si un changement a eu lieu, je rajoute tous les seccesseurs */
+      if( change ){
+	for(i=0; i<current->get_nb_succ(); i++){
+	  if(i==0)
+	    workinglist.push_back(current->get_successor1());
+	  if(i==1)
+	    workinglist.push_back(current->get_successor2());
+	}
+	change = false;
+      }
+      
+      /* pop */
+      workinglist.pop_front();
+    }
+
+  }
+
+  /**** END: TP1-2 Exo5 ****/
 
   // ne pas enlever 
   dom_computed = true;
