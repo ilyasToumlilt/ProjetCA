@@ -200,6 +200,8 @@ void Function::comput_basic_block(){
   
   /**** A COMPLETER ****/
 
+  /**** DEBUT: TP1-2 Exo2 ****/
+  
   /* le premier BB commence à la première instruction
      pour illiminer les directives au début */
   while( current != _end && !(current->isInst()) )
@@ -222,7 +224,6 @@ void Function::comput_basic_block(){
       /* on passe à l'inst suivante ( son delayed slot ) */
       /* je ne boucle pas jusqu'à l'inst suivante vu qu'on a considéré 
 	 que le delayed slot suit directement le branchement */
-      cout << "DEBUG:" << current->get_content() << endl;
       current = current->get_next();
 
       /* et je add le new BB */
@@ -252,11 +253,10 @@ void Function::comput_basic_block(){
     
     /* incr */
     prev    = current;
-    cout << "DEBUG:" << current->get_content() << endl;
     current = current->get_next();
   }
   
-
+  /**** FIN: TP1-2 Exo2 ****/
 
   cout<<"end comput Basic Block"<<endl;
   BB_computed = true;
@@ -309,14 +309,54 @@ void Function::comput_succ_pred_BB(){
    if (BB_pred_succ) return;
    int size= (int) _myBB.size();
    it=_myBB.begin();
-   
+
+   /*** boucle qui permet d'itérer sur les blocs de la fonction ***/
    for (int i=0; i<size; i++){
      current=*it;
     
      /** A COMPLETER **/
-     /*** boucle qui permet d'itérer sur les blocs de la fonction ***/
 
+     /**** DEBUT: TP1-2 Exo3 ****/
+
+     instr = (Instruction*)current->get_branch();
+
+     if( instr ){
+       /* cas du branchement conditionnel */
+       if( instr->is_cond_branch() ){
+	 /* on rajoute la cible du branchement */
+	 current->set_link_succ_pred(find_label_BB(instr->get_op_label()));
+	 /* et également le block suivant, si on est pas au dernier */
+	 if( i < size - 1 ){
+	   current->set_link_succ_pred(get_BB(i+1));
+	 }
+       }
+       /* cas de l'appel de fonction */
+       else if( instr->is_call() ){
+	 /* block suivant si je ne suis pas dernier ... */
+	 if( i < size - 1 ){
+	   current->set_link_succ_pred(get_BB(i+1));
+	 }
+       }
+       /* cas des sauts indirects */
+       else if( instr->is_indirect_branch() ){
+	 /* je ne fais rien */
+	 ;
+       }
+       else {
+	 /* que la cible du Br */
+	 current->set_link_succ_pred(find_label_BB(instr->get_op_label()));
+       }
+     } else {
+       /* si pas de branchement je me rajoute le block suivant comme 
+	  successeur, si je ne suis pas le block de fin */
+       if( i < size - 1 ){
+	 current->set_link_succ_pred(get_BB(i+1));
+       }
+     }
+     
      it++;
+
+     /**** FIN: TP1-2 Exo3 ****/
    }
    
    // ne pas enlever la ligne ci-dessous
