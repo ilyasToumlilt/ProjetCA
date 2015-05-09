@@ -201,14 +201,14 @@ void Function::comput_basic_block(){
   /**** A COMPLETER ****/
 
   /* le premier BB commence à la première instruction
-     pour illiminer les directives au début */
+     pour eliminer les directives au début */
   while( current != _end && !(current->isInst()) )
     current = current->get_next();
   
   while( current != _end ){
 
     /* pour ignorer les directives entres les blocks 
-       ( surtotu à la fin )
+       ( surtout à la fin )
        si je n'ai pas encore assigné de début, je skip */
     if( current == debut
 	&& current->isDirective() ){
@@ -302,7 +302,7 @@ list<Basic_block*>::iterator Function::bb_list_end(){
 void Function::comput_succ_pred_BB(){
   
    list<Basic_block*>::iterator it, it2;
-   Basic_block *current;
+   Basic_block *current, *current2;
    Instruction *instr;
    Basic_block *succ=NULL;
    // IMPORTANT ne pas enlever la ligne ci-dessous 
@@ -316,6 +316,57 @@ void Function::comput_succ_pred_BB(){
      /** A COMPLETER **/
      /*** boucle qui permet d'itérer sur les blocs de la fonction ***/
 
+     /********************** Partie ajoutee ***********************************/
+
+     /* dernier bloc de base n'a pas de succ */
+     if( current->get_end() == _end){
+       break;
+     }
+     
+     /* Si la derniere instruction du bloc est un branchement */
+     if(current->get_branch()){
+       if(getInst(current->get_branch())->is_indirect_branch()){
+	 /* pas de successeur pour les sauts indirects */
+	 it++;
+	 continue;
+       }
+       else if(getInst(current->get_branch())->is_cond_branch()){
+	 /* branchement conditionnel : 2 successeurs */
+	 succ = find_label_BB(getInst(current->get_branch())->get_op_label());
+	 /* ajout du successeur pointee par 
+	    le Label indiquee au branchement */
+	 current->set_link_succ_pred(succ);
+	 succ = current->get_successor1();
+       }
+       else{
+	 /* 1 seul successeur, recuperer le 
+	    bloc de base du Label du saut */
+	 succ = find_label_BB(getInst(current->get_branch())->get_op_label());
+       }
+     }
+     else{
+       /* pas de saut 1 successeur */
+       /* idee parcourir la liste des blocs de bases pour recuperer
+	  le bloc de base correspondant au Label */
+       it2=_myBB.begin();
+       
+       for (int i=0; i<size; i++){
+	 current2=*it2;
+
+	 if(current2->get_head() == current->get_end()->get_next()){
+	   succ = current2;
+	   break;
+	 }
+	 
+	 it2++;
+       }
+     }
+     
+     /* ajout du successeur du bloc de base courant */
+     current->set_link_succ_pred(succ);
+     
+     /********************** Fin Partie ajoutee *******************************/
+     
      it++;
    }
    
