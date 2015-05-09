@@ -200,15 +200,17 @@ void Function::comput_basic_block(){
   
   /**** A COMPLETER ****/
 
+  /**** DEBUT: TP1-2 Exo2 ****/
+  
   /* le premier BB commence à la première instruction
-     pour eliminer les directives au début */
+     pour illiminer les directives au début */
   while( current != _end && !(current->isInst()) )
     current = current->get_next();
   
   while( current != _end ){
 
     /* pour ignorer les directives entres les blocks 
-       ( surtout à la fin )
+       ( surtotu à la fin )
        si je n'ai pas encore assigné de début, je skip */
     if( current == debut
 	&& current->isDirective() ){
@@ -222,7 +224,6 @@ void Function::comput_basic_block(){
       /* on passe à l'inst suivante ( son delayed slot ) */
       /* je ne boucle pas jusqu'à l'inst suivante vu qu'on a considéré 
 	 que le delayed slot suit directement le branchement */
-      cout << "DEBUG:" << current->get_content() << endl;
       current = current->get_next();
 
       /* et je add le new BB */
@@ -252,11 +253,10 @@ void Function::comput_basic_block(){
     
     /* incr */
     prev    = current;
-    cout << "DEBUG:" << current->get_content() << endl;
     current = current->get_next();
   }
   
-
+  /**** FIN: TP1-2 Exo2 ****/
 
   cout<<"end comput Basic Block"<<endl;
   BB_computed = true;
@@ -309,59 +309,54 @@ void Function::comput_succ_pred_BB(){
    if (BB_pred_succ) return;
    int size= (int) _myBB.size();
    it=_myBB.begin();
-   
+
+   /*** boucle qui permet d'itérer sur les blocs de la fonction ***/
    for (int i=0; i<size; i++){
      current=*it;
     
      /** A COMPLETER **/
-     /*** boucle qui permet d'itérer sur les blocs de la fonction ***/
 
-     /********************** Partie ajoutee ***********************************/
+     /**** DEBUT: TP1-2 Exo3 ****/
 
-     /* dernier bloc de base n'a pas de succ */
-     if( current->get_end() == _end){
-       break;
+     instr = (Instruction*)current->get_branch();
+
+     if( instr ){
+       /* cas du branchement conditionnel */
+       if( instr->is_cond_branch() ){
+	 /* on rajoute la cible du branchement */
+	 current->set_link_succ_pred(find_label_BB(instr->get_op_label()));
+	 /* et également le block suivant, si on est pas au dernier */
+	 if( i < size - 1 ){
+	   current->set_link_succ_pred(get_BB(i+1));
+	 }
+       }
+       /* cas de l'appel de fonction */
+       else if( instr->is_call() ){
+	 /* block suivant si je ne suis pas dernier ... */
+	 if( i < size - 1 ){
+	   current->set_link_succ_pred(get_BB(i+1));
+	 }
+       }
+       /* cas des sauts indirects */
+       else if( instr->is_indirect_branch() ){
+	 /* je ne fais rien */
+	 ;
+       }
+       else {
+	 /* que la cible du Br */
+	 current->set_link_succ_pred(find_label_BB(instr->get_op_label()));
+       }
+     } else {
+       /* si pas de branchement je me rajoute le block suivant comme 
+	  successeur, si je ne suis pas le block de fin */
+       if( i < size - 1 ){
+	 current->set_link_succ_pred(get_BB(i+1));
+       }
      }
-     
-     /* Si la derniere instruction du bloc est un branchement */
-     if(current->get_branch()){
-       instr = getInst(current->get_branch());
-       
-       if(instr->is_indirect_branch()){
-	 /* pas de successeur pour les sauts indirects */
-	 it++;
-	 continue;
-       }
-       else if(instr->is_call()){
-	 if(i < (size-1))
-	   succ = get_BB(i+1);
-       }
-       else if(instr->is_cond_branch()){
-	 /* branchement conditionnel : 2 successeurs */
-	 succ = find_label_BB(instr->get_op_label());
-	 /* ajout du successeur pointee par 
-	    le Label indiquee au branchement */
-	 current->set_link_succ_pred(succ);
-	 succ = current->get_successor1();
-       }
-       else{
-	 /* 1 seul successeur, recuperer le 
-	    bloc de base du Label du saut */
-	 succ = find_label_BB(instr->get_op_label());
-       }
-     }
-     else{
-       /* pas de saut 1 successeur */
-       if(i < (size-1))
-	 succ = get_BB(i+1);
-     }
-     
-     /* ajout du successeur du bloc de base courant */
-     current->set_link_succ_pred(succ);
-     
-     /********************** Fin Partie ajoutee *******************************/
      
      it++;
+
+     /**** FIN: TP1-2 Exo3 ****/
    }
    
    // ne pas enlever la ligne ci-dessous
@@ -371,50 +366,109 @@ void Function::comput_succ_pred_BB(){
 
 void Function::compute_dom(){
  list<Basic_block*>::iterator it, it2;
- list<Basic_block*> workinglist;
- Basic_block *current, *bb, *pred;
- Instruction *instr;
- bool change = true;
+  list<Basic_block*> workinglist;
+  Basic_block *current, *bb, *pred;
+  Instruction *instr;
+  bool change = true;
+  int size= (int) _myBB.size();
+  
+  // NE pas enlever les 2 ligne ci-dessous
+  if (dom_computed) return;
+  comput_succ_pred_BB();
  
- // NE pas enlever les 2 ligne ci-dessous
- if (dom_computed) return;
- comput_succ_pred_BB();
-   
- // A COMPLETER
- int size=(int)_myBB.size();
- it=_myBB.begin();
- 
- if(size>0){
-   current=*it;
-   for(int j=1; j<NB_MAX_BB; j++){
-     current->Domin[j] = false;
-   }
-   it++;
 
-   for (int i=1; i<size; i++){
-     current=*it;
-     
-     /* recuperer la liste d'un predecesseur */
-     for(int j=0; j<NB_MAX_BB; j++){
-       current->Domin[j] = get_BB(current->get_index()-1)->Domin[j];
-     }
+  // A COMPLETER
 
-     /* mettre current dans sa liste de blocs dominants */
-     current->Domin[i] = true;
+  /**** BEGIN: TP1-2 Exo5 ****/
 
-     /* ajouter le predecesseur a la liste s'il est unique */
-     if(current->get_nb_pred() == 1)
-       current->Domin[current->get_index()-1] = true;
-     else
-       current->Domin[current->get_index()-1] = false;
-     
-     it++;
-   }
- }
- 
- // ne pas enlever 
- dom_computed = true;
- return;
+    /**** BEGIN: TP1-2 Exo5 ****/
+  int nbPred, i, j;
+
+  /* la liste des blocks ne doit pas être vide ... */
+  if( (int)_myBB.size() ){
+    /* Je commence par rajouter le premier block à la working list */
+    workinglist.push_back(get_BB(0));
+    /* parcours de la working list */
+    while( workinglist.size() ){
+      it = workinglist.begin();
+      current = *it;
+      
+      nbPred = current->get_nb_pred();
+
+      /* si le block n'a pas de prédécesseur c'est que son seul dominant
+	 est lui-même */
+      if( nbPred == 0 ){
+	for(i=0; i<(int)_myBB.size(); i++)
+	  current->Domin[i] = ( i == current->get_index() ) ? true : false;
+      }
+      /* sinon s'il a un seul prédécesseur, il prend tous ses dominant
+	 union lui-même */
+      else if( nbPred == 1 ){
+	pred = current->get_predecessor(0);
+	for(i=0; i<(int)_myBB.size(); i++){
+	  if( i == current->get_index()
+	      && current->Domin[i] == false ){
+	    current->Domin[i] = true;
+	    change = true;
+	  }
+	  else if( i != current->get_index()
+		   && current->Domin[i] != pred->Domin[i] ){
+	    current->Domin[i] = pred->Domin[i];
+	    change = true;
+	  }
+	}
+      }
+      /* sinon s'il y a plus d'un prédécesseur on fait l'intersection des
+	 dominants des prédécesseurs + moi même */
+      else {
+	for(i=0; i<(int)_myBB.size(); i++){
+	  if( i == current->get_index() ) {
+	    if( current->Domin[i] == false ){
+	      current->Domin[i] = true;
+	      change = true;
+	    }
+	  }
+	  else {
+	    for(j=0; j<nbPred; j++)
+	      if( current->get_predecessor(j)->Domin[i] == false )
+		break;
+	    if( j != nbPred
+		&& current->Domin[i] == true ){
+	      current->Domin[i] = false;
+	      change = true;
+	    }
+	    else if ( j == nbPred
+		      && current->Domin[i] == false ){
+	      current->Domin[i] = true;
+	      change = true;
+	    }
+	  }
+	}
+      }
+
+      /* si un changement a eu lieu, je rajoute tous les seccesseurs */
+      if( change ){
+	for(i=0; i<current->get_nb_succ(); i++){
+	  if(i==0)
+	    workinglist.push_back(current->get_successor1());
+	  if(i==1)
+	    workinglist.push_back(current->get_successor2());
+	}
+	change = false;
+      }
+      
+      /* pop */
+      workinglist.pop_front();
+    }
+
+  }
+
+  /**** END: TP1-2 Exo5 ****/
+
+
+  // ne pas enlever 
+  dom_computed = true;
+  return;
 }
 
 void Function::compute_live_var(){
@@ -434,8 +488,8 @@ void Function::compute_live_var(){
 
 void Function::test(){
   int size=(int)_myBB.size();
-  for(int i=0;i<size; i++){
+   for(int i=0;i<size; i++){
     get_BB(i)->test();
   }
-  return;
+   return;
 }
