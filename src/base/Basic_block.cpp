@@ -346,34 +346,42 @@ void Basic_block::comput_pred_succ_dep(){
 
   /***************************** Debut reponse ****************************/
 
-  Line *current, *suiv;
+  Line *current, *suiv, *contr;
   Instruction *instr1, *instr2;
   t_Dep d;
   
   for(current = get_head(); current; current=current->get_next()){    
     /* on recupere l'instruction sur la ligne suivante */
     suiv = current->get_next();
+    instr1 = getInst(current);
     
     if(suiv){
-      instr1 = getInst(current);
-      instr2 = getInst(suiv);
+      if(!suiv->get_next() && current->get_type() == BR){
+	/* derniere instruction, branchement dependance CONTROL
+	   On recupere la premiere ligne du bloc de base pointe
+	   par le saut */
+	contr = get_successor2()->get_head();
+	instr2 = getInst(contr);
+	add_dep_link(instr1, instr2, CONTROL);
+      }
+      else{
+	/* pas derniere instruction chercher dependance */
+	instr2 = getInst(suiv);
 
-      if(instr1->is_dep_RAW1(instr2))
-	d = RAW;
-      else if(instr1->is_dep_RAW2(instr2))
-	d = RAW;
-      else if(instr1->is_dep_WAR(instr2))
-	d = WAR;
-      else if(instr1->is_dep_WAW(instr2))
-	d = WAW;
+	if(instr1->is_dep_RAW1(instr2) || instr1->is_dep_RAW2(instr2))
+	  d = RAW;
+	else if(instr1->is_dep_WAR(instr2))
+	  d = WAR;
+	else if(instr1->is_dep_WAW(instr2))
+	  d = WAW;
+
+	add_dep_link(instr1, instr2, d);
+      }
     }
-    else
-      d = CONTROL;
-
-    /* pas bien compris le dernier paragraphe de la 
-       question sur la dependance de controle */
-    
-    add_dep_link(instr1, instr2, d);
+    else{
+      /* derniere instruction mais n'est pas un saut */
+      add_dep_link(instr1, NULL, NONE);
+    }
   }
   
   /***************************** Fin reponse ******************************/
