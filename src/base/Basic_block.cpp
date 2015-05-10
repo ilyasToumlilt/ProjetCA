@@ -409,8 +409,34 @@ void Basic_block::reset_pred_succ_dep(){
 
 int Basic_block::nb_cycles(){
   
- /*** A COMPLETER ***/
-  return 0;
+  /*** A COMPLETER ***/
+  int nbCycles=0, max, del;
+  Line *current;
+  Instruction *instr;
+  
+  for(current = get_head(); current; current=current->get_next()){    
+    /* on recupere l'instruction sur la ligne suivante */
+    instr = getInst(current);
+    
+    if(current->get_next()){
+      max = 0;
+
+      /* je parcours toutes les instrcutions, calcule le delai max parmi les delai
+         d'attente par les dépendances dont elle dépent, puis ajoute cette valeur 
+         au nombre de cycle total */
+      for(int i=0; i<instr->get_nb_pred(); i++){
+	if(instr->get_pred_dep(i)->type == RAW){
+	  del = delai(instr->get_pred_dep(i)->inst->get_type() , instr->get_type()); 
+	  if(del > max)
+	    max = del;
+	}
+      }
+
+      nbCycles += max;
+    }
+  }
+  
+  return nbCycles;
 }
 
 /* 
