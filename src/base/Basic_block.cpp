@@ -344,8 +344,79 @@ void Basic_block::comput_pred_succ_dep(){
    link_instructions();
    if (dep_done) return;
 
-   
+   /**** DEBUT: TP3 Question1 ****/
 
+   Instruction *current, *tmp;
+   int i = size() - 1;
+   int j;
+   
+   /* si la dernière instruction est un delayed slot, je ne la traite pas */
+   current = get_instruction_at_index(i);
+   if(is_delayed_slot(current))
+     i--;
+
+   /* main loop */
+   for(; i>=0; i--){
+     current = get_instruction_at_index(i);
+     
+     /* recherche du RAW1 */
+     for(j=i-1; j>=0; j--){
+       tmp = get_instruction_at_index(j);
+       if(tmp->is_dep_RAW1(current)){
+	 add_dep_link(tmp, current, RAW);
+	 break;
+       }
+     }
+
+     /* recherche du RAW2 */
+     for(j=i-1; j>=0; j--){
+       tmp = get_instruction_at_index(j);
+       if(tmp->is_dep_RAW2(current)){
+	 add_dep_link(tmp, current, RAW);
+	 break;
+       }
+     }
+
+     /* recherche du WAR1 */
+     for(j=i-1; j>=0; j--){
+       tmp = get_instruction_at_index(j);
+       if(tmp->is_dep_WAR1(current)){
+	 add_dep_link(tmp, current, WAR);
+	 break;
+       }
+     }
+
+     /* recherche du WAR2 */
+     for(j=i-1; j>=0; j--){
+       tmp = get_instruction_at_index(j);
+       if(tmp->is_dep_WAR2(current)){
+	 add_dep_link(tmp, current, WAR);
+	 break;
+       }
+     }
+
+     /* recherche du WAW */
+     for(j=i-1; j>=0; j--){
+       tmp = get_instruction_at_index(j);
+       if(tmp->is_dep_WAW(current)){
+	 add_dep_link(tmp, current, WAW);
+	 break;
+       }
+     }
+
+     /* recherche du MEM */
+     for(j=i-1; j>=0; j--){
+       tmp = get_instruction_at_index(j);
+       if(tmp->is_dep_MEM(current)){
+	 add_dep_link(tmp, current, MEMDEP);
+	 break;
+       }
+     }
+     
+   }
+   
+   /**** FIN: TP3 Question2 ****/
+     
    // NE PAS ENLEVER : cette fonction ne doit être appelée qu'une seule fois
    dep_done = true;
    return;
