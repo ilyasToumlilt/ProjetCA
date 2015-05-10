@@ -441,7 +441,28 @@ void Basic_block::reset_pred_succ_dep(){
 int Basic_block::nb_cycles(){
   
  /*** A COMPLETER ***/
-  return 0;
+
+  /**** DEBUT: TP3 Question2 ****/
+
+  int nbCycles = size();
+  int i, j, k, gel;
+  Instruction *current, *tmp;
+  
+  for(i=1; i<size(); i++){
+    current = get_instruction_at_index(i);
+    /* calcul du nombre de gel */
+    gel = 0;
+    for(j=0; j<current->get_nb_pred(); j++){
+      tmp = current->get_pred_dep(j)->inst;
+      k = (delai(tmp->get_type(), current->get_type()))
+	- (current->get_index() - tmp->get_index());
+      gel = (gel > k) ? gel : k;
+    }
+    nbCycles += gel;
+  }
+  
+  /**** FIN: TP3 Question2 ****/
+  return nbCycles;
 }
 
 /* 
